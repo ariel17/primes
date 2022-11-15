@@ -3,8 +3,10 @@
 ## Execute it
 
 ```
-$ node primes.js
+# Locally
+$ npm install && node primes.js
 
+# Docker
 $ docker build . ariel17/primes && docker run ariel17/primes
 ```
 
