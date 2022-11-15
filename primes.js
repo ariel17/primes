@@ -1,3 +1,18 @@
+const { createLogger, format, transports } = require('winston');
+const { combine, timestamp, printf } = format;
+
+const customFormat = printf(({ level, message, label, timestamp }) => {
+    return `${timestamp} ${level}: ${message}`;
+});
+
+const logger = createLogger({
+  format: combine(
+    timestamp(),
+    customFormat,
+  ),
+  transports: [new transports.Console()]
+});
+
 for (let i = 2; ; i++) {
     let isDivisible = false;
     for (let j = 2; j < i; j++) {
@@ -8,6 +23,6 @@ for (let i = 2; ; i++) {
     }
 
     if (!isDivisible) {
-        console.log(`${i} is a prime number`);
+        logger.info(`${i} is a prime number`);
     }
 }
