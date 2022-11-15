@@ -24,5 +24,7 @@ for (let i = 2; ; i++) {
 
     if (!isDivisible) {
         logger.info(`${i} is a prime number`);
+    } else {
+        logger.info(`${i} is NOT a prime number`);
     }
 }
