@@ -40,6 +40,7 @@ app.get('/metrics', async function(_, res) {
     res.setHeader('Content-Type', register.contentType);
     const metrics = await register.metrics();
     res.send(metrics);
+    register.resetMetrics()
 });
 
 // Accepts JSON body: {"from": 2, "to": 1000}
