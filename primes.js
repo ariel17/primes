@@ -35,24 +35,37 @@ register.registerMetric(notFound)
 
 // HTTP server exposing metrics
 var app = express();
+app.use(express.json());
 app.get('/metrics', async function(_, res) {
     res.setHeader('Content-Type', register.contentType);
     const metrics = await register.metrics();
     res.send(metrics);
 });
 
-app.post('/start', function(_, res) {
+// Accepts JSON body: {"from": 2, "to": 1000}
+app.post('/start', function(req, res) {
     res.setHeader('Content-Type', 'text/plain');
-    res.send("Started!");
-    foundPrimes();
+    res.send(`Started! ${JSON.stringify(req.body)}`);
+    foundPrimes(req.body.from, req.body.to);
 });
 
 app.listen(8080, () => {
     logger.info("Server listening on port 8080");
 });
 
-function foundPrimes() {
-    for (let i = 2; i < 10000; i++) {
+function foundPrimes(from, to) {
+    for (let i = from; i <= to; i++) {
+        if (i <= 1) {
+            notFound.inc();
+            logger.warn(`${i} is NOT a prime number`);
+            continue;
+        }
+        if (i == 2) {
+            found.inc();
+            logger.info(`${i} is a prime number`);
+            continue;
+        }
+
         let isDivisible = false;
         for (let j = 2; j < i; j++) {
             if (i % j == 0) {
