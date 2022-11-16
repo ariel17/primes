@@ -1,10 +1,12 @@
 const { createLogger, format, transports } = require('winston');
 const { combine, timestamp, printf } = format;
+const client = require('prom-client')
+const express = require('express');
 
+// Logger formatting
 const customFormat = printf(({ level, message, label, timestamp }) => {
     return `${timestamp} ${level}: ${message}`;
 });
-
 const logger = createLogger({
   format: combine(
     timestamp(),
@@ -13,18 +15,58 @@ const logger = createLogger({
   transports: [new transports.Console()]
 });
 
-for (let i = 2; ; i++) {
-    let isDivisible = false;
-    for (let j = 2; j < i; j++) {
-        if (i % j == 0) {
-            isDivisible = true;
-            break;
-        }
-    }
+// Metrics registry
+const register = new client.Registry()
+register.setDefaultLabels({
+  app: 'primes-nodejs'
+})
 
-    if (!isDivisible) {
-        logger.info(`${i} is a prime number`);
-    } else {
-        logger.info(`${i} is NOT a prime number`);
+client.collectDefaultMetrics({ register })
+const found = new client.Counter({
+    name: 'found',
+    help: 'Amount of primes found',
+});
+const notFound = new client.Counter({
+    name: 'not_found',
+    help: 'Amount of primes not found',
+});
+register.registerMetric(found)
+register.registerMetric(notFound)
+
+// HTTP server exposing metrics
+var app = express();
+app.get('/metrics', async function(_, res) {
+    res.setHeader('Content-Type', register.contentType);
+    const metrics = await register.metrics();
+    res.send(metrics);
+});
+
+app.post('/start', function(_, res) {
+    res.setHeader('Content-Type', 'text/plain');
+    res.send("Started!");
+    foundPrimes();
+});
+
+app.listen(8080, () => {
+    logger.info("Server listening on port 8080");
+});
+
+function foundPrimes() {
+    for (let i = 2; i < 10000; i++) {
+        let isDivisible = false;
+        for (let j = 2; j < i; j++) {
+            if (i % j == 0) {
+                isDivisible = true;
+                break;
+            }
+        }
+
+        if (!isDivisible) {
+            found.inc();
+            logger.info(`${i} is a prime number`);
+        } else {
+            notFound.inc();
+            logger.warn(`${i} is NOT a prime number`);
+        }
     }
 }
