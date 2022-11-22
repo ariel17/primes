@@ -1,6 +1,6 @@
 const { createLogger, format, transports } = require('winston');
 const { combine, timestamp, printf } = format;
-const client = require('prom-client')
+const client = require('prom-client');
 const express = require('express');
 
 // Logger formatting
@@ -16,22 +16,29 @@ const logger = createLogger({
 });
 
 // Metrics registry
-const register = new client.Registry()
+const register = new client.Registry();
 register.setDefaultLabels({
   app: 'primes-nodejs'
-})
+});
 
-client.collectDefaultMetrics({ register })
+client.collectDefaultMetrics({ register });
 const found = new client.Counter({
     name: 'found',
     help: 'Amount of primes found',
 });
+register.registerMetric(found);
+
 const notFound = new client.Counter({
     name: 'not_found',
     help: 'Amount of primes not found',
 });
-register.registerMetric(found)
-register.registerMetric(notFound)
+register.registerMetric(notFound);
+
+const searchTime = new client.Gauge({
+    name: 'search_time',
+    help: 'Time taken to evaluate a number for prime',
+});
+register.registerMetric(searchTime);
 
 // HTTP server exposing metrics
 var app = express();
@@ -55,6 +62,7 @@ app.listen(8080, () => {
 
 function foundPrimes(from, to) {
     for (let i = from; i <= to; i++) {
+        const end = searchTime.startTimer();
         if (i <= 1) {
             notFound.inc();
             logger.warn(`${i} is NOT a prime number`);
@@ -73,6 +81,7 @@ function foundPrimes(from, to) {
                 break;
             }
         }
+        end();
 
         if (!isDivisible) {
             found.inc();
