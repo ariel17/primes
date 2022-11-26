@@ -1,7 +1,7 @@
 FROM node:latest
 
 WORKDIR /app
-COPY primes.js package*.json .
+COPY primes.js package*.json ./
 
 EXPOSE 8080
 
