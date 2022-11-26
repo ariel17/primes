@@ -1,0 +1,27 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - uses: actions/checkout@v3
+    - name: Build the Docker image with date tag
+      run: docker build . --file Dockerfile --tag ariel17/primes:$(date +%s)
+    - name: Build the Docker image with latest tag
+      run: docker build . --file Dockerfile --tag ariel17/primes:latest
+    - name: Push Docker tags
+      run: docker push ariel17/primes
